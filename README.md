@@ -1,37 +1,72 @@
-# Machine Learning SmartCow YOLO26n
+# SmartCow: Deteksi Postur Sapi dengan YOLO26n
 
-Deteksi postur sapi perah dan orang pada rekaman CCTV kandang memakai YOLO26n. Tiga kelas: `cow_standing`, `cow_lying`, dan `person`. Repositori berisi kode training, bobot hasil training, grafik, dan contoh keluaran.
+SmartCow menggunakan rekaman CCTV untuk mengenali sapi berdiri, sapi berbaring, dan orang di kandang. Model yang digunakan adalah YOLO26n, dilatih ulang dengan gambar dari kamera kandang agar sesuai dengan sudut pandang dan kondisi pencahayaan di lokasi.
 
-## Ringkasan
+Repositori ini memuat kode training, bobot model, hasil evaluasi, dan beberapa contoh prediksi. Pengembangannya mencakup pemilihan frame dari video, pelabelan objek, pembagian data berdasarkan sesi rekaman, hingga fine-tuning dan evaluasi model. Training dilakukan di CPU menggunakan Ultralytics dan PyTorch.
 
-| Item | Nilai |
+## Contoh hasil deteksi
+
+Berikut prediksi pada satu frame beresolusi 1920x1080 dari sesi S6, yang masuk ke data test. Gambar diproses dengan bobot dalam repositori ini pada `conf 0.25`; kotak dan confidence ditampilkan tanpa perubahan.
+
+![Prediksi YOLO26n pada rekaman kandang](examples/session_s6_frame_pred.jpg)
+
+Untuk membedakan label dataset dari keluaran model, pasangan gambar berikut menampilkan frame yang sama. Sebelah kiri adalah label acuan otomatis dari Roboflow; sebelah kanan adalah prediksi YOLO26n. Setiap panel berisi dua frame dari plot evaluasi Ultralytics. Pada area yang padat, teks label dapat bertumpuk.
+
+| Label acuan otomatis | Prediksi YOLO26n |
 |---|---|
-| Tugas | Deteksi objek 3 kelas |
-| Model | Ultralytics YOLO26n (pretrained COCO), fine-tuning di CPU |
-| Data | 999 frame: 599 train, 152 val, 248 test |
-| Konfigurasi | 640 px, batch 2, 40 epoch, patience 10, seed 0, 6 thread |
-| Waktu training | sekitar 1 jam 31 menit di CPU |
-| mAP50 test | 0.858 (mAP50-95 0.551) |
+| ![Label acuan Roboflow](examples/test_batch0_labels.jpg) | ![Prediksi model pada gambar yang sama](examples/test_batch0_pred.jpg) |
 
-## Peran teknis
+Contoh yang dipilih tidak menampilkan wajah pekerja yang dapat dikenali. Dataset penuh dan video sumber tidak dibagikan di repositori ini.
 
-OpenCV dipakai untuk ekstraksi frame dan penyaringan kualitas (kecerahan, kontras, ketajaman, area kandang). Roboflow dipakai untuk auto-label dan ekspor format YOLO26. Training dan evaluasi memakai Ultralytics YOLO26n dengan PyTorch di CPU, tanpa cloud dan tanpa model lain.
+## Data dan proses training
 
-## Dataset
+Data bersumber dari 55 rekaman CCTV Tapo dengan resolusi 1920x1080 dan frame rate 15 fps, berdurasi total sekitar 25,5 jam. OpenCV digunakan untuk mengambil kandidat frame setiap 15 detik. Kandidat kemudian disaring berdasarkan pencahayaan, kontras, ketajaman pada area kandang, serta jarak waktu antar-frame untuk mengurangi gambar yang hampir sama. Dari 3.742 kandidat, terpilih 999 gambar.
 
-Sumbernya 55 rekaman CCTV Tapo 1920x1080, 15 fps, total sekitar 25,5 jam. Frame diambil setiap 15 detik dengan filter kualitas dan jarak minimum antar-frame; dari 3.742 kandidat terpilih 999 frame. Split dilakukan per sesi rekaman agar satu video tidak muncul di dua split:
+Pembagian data mengikuti sesi rekaman, bukan mengacak seluruh gambar. Dengan cara ini, frame dari satu video tidak tersebar ke training dan evaluasi sekaligus.
 
-| Split | Frame | Sesi |
+| Pembagian | Jumlah gambar | Sesi rekaman |
 |---|---:|---|
-| train | 599 | S3 |
-| val | 152 | S1 (120) + S2 (32) |
-| test | 248 | S6 |
+| Training | 599 | S3 |
+| Validasi | 152 | S1 (120) dan S2 (32) |
+| Test | 248 | S6 |
 
-Sesi S4 dan S5 tidak dipakai karena sudah pernah dipakai pada evaluasi versi sebelumnya. Label berasal dari auto-label Roboflow untuk 999 frame tersebut: sekitar 9.061 kotak `cow_standing`, 2.612 `cow_lying`, dan 1.180 `person`. Tidak ada augmentasi saat ekspor, hanya auto-orient.
+Sesi S4 dan S5 tidak dimasukkan karena sudah digunakan dalam evaluasi versi sebelumnya. Pelabelan dilakukan melalui Roboflow Auto Label untuk tiga kelas: `cow_standing`, `cow_lying`, dan `person`. Hasil pelabelan awal mencakup sekitar 9.061 kotak sapi berdiri, 2.612 kotak sapi berbaring, dan 1.180 kotak orang. Dataset diekspor ke format YOLO26 dengan auto-orient, tanpa augmentasi pada tahap ekspor.
 
-Label ini adalah **label acuan otomatis**, bukan anotasi manual atau ground truth manusia. Dataset penuh dan video sumber tidak disertakan.
+Training dimulai dari bobot pretrained COCO `yolo26n.pt`, bukan dari bobot acak. Model kemudian di-fine-tune selama 40 epoch dengan ukuran input 640, batch 2, patience 10, dan seed 0. Proses berjalan secara lokal tanpa GPU atau layanan cloud training, menggunakan 6 thread CPU dan `workers 0`, dengan waktu sekitar 1 jam 31 menit. Roboflow digunakan untuk pelabelan dan pengelolaan dataset, sedangkan training dan evaluasi dijalankan melalui Ultralytics dan PyTorch.
 
-## Training
+## Hasil evaluasi
+
+Pada data test, model memperoleh mAP50 sebesar 0.858 dan mAP50-95 sebesar 0.551. Deteksi sapi berdiri memberikan hasil tertinggi di antara ketiga kelas. Kelas orang masih memiliki performa terendah, meskipun ikut dilatih sebagai bagian dari deteksi di kandang.
+
+| Pembagian | mAP50 | mAP50-95 |
+|---|---:|---:|
+| Validasi | 0.845 | 0.520 |
+| Test | 0.858 | 0.551 |
+
+Precision, recall, dan F1 di bawah dihitung pada data test dengan confidence 0.25, NMS IoU 0.5, dan pencocokan kotak pada IoU 0.5. Baris micro menggabungkan TP, FP, dan FN ketiga kelas; nilai AP50 per kelas berasal dari evaluasi kurva, bukan hanya titik confidence tersebut.
+
+| Kelas | Precision | Recall | F1 | AP50 |
+|---|---:|---:|---:|---:|
+| cow_lying | 0.855 | 0.742 | 0.795 | 0.843 |
+| cow_standing | 0.936 | 0.889 | 0.912 | 0.952 |
+| person | 0.756 | 0.711 | 0.733 | 0.779 |
+| Gabungan (micro) | 0.904 | 0.841 | 0.872 | - |
+
+mAP dihitung dengan batas confidence awal 0.001. Rincian pengaturan dan angka lengkap tersedia di [eval_metrics.json](results/eval_metrics.json) dan [eval_metrics.csv](results/eval_metrics.csv).
+
+Label evaluasi berasal dari pelabelan otomatis Roboflow dan belum diverifikasi manusia secara menyeluruh. Karena itu, skor ini menunjukkan kesesuaian terhadap label dataset, bukan persentase akurasi operasional di kandang.
+
+| Perkembangan training | Kurva F1 |
+|---|---|
+| ![Grafik loss dan metrik selama training](results/results.png) | ![Kurva F1 model](results/BoxF1_curve.png) |
+
+Matriks konfusi pada data test dengan confidence 0.25:
+
+![Matriks konfusi data test](results/confusion_matrix_test.png)
+
+## Menjalankan model
+
+Siapkan lingkungan Python dan pasang dependensi sebelum menjalankan training:
 
 ```bash
 python -m venv .venv
@@ -40,66 +75,24 @@ pip install -r requirements.txt
 python train.py
 ```
 
-`train.py` memakai `data.yaml` dan mengunduh bobot awal `yolo26n.pt` bila belum ada. Dataset diharapkan berada di `data/images/{train,valid,test}` dengan label di `data/labels/{train,valid,test}`. Untuk lokasi lain, arahkan `--data` ke file YAML dengan struktur yang sama.
+Perintah aktivasi di atas untuk Windows. Dataset perlu disiapkan terlebih dahulu karena tidak disertakan di repositori. Secara default, `data.yaml` menunjuk gambar di `data/images/{train,valid,test}` dan label di `data/labels/{train,valid,test}`. Jika memakai lokasi lain, berikan file YAML melalui argumen `--data`. Bobot awal `yolo26n.pt` akan diunduh jika belum tersedia.
 
-Konfigurasi yang dipakai: CPU, 640 px, batch 2, 40 epoch, patience 10, seed 0, 6 thread, `workers 0`. Argumen lain tersedia lewat `python train.py --help`.
+Pengaturan bawaan mengikuti konfigurasi training yang dijelaskan di atas. Pilihan argumen dapat dilihat melalui `python train.py --help`.
 
-Inferensi dengan bobot yang disertakan:
+Untuk inferensi, gunakan bobot hasil training yang sudah disertakan:
 
 ```bash
 yolo predict model=weights/yolo26n_640_s0_best.pt source=data/images/test imgsz=640 conf=0.25 device=cpu
 ```
 
-## Hasil
+## Cakupan penggunaan
 
-| Split | mAP50 | mAP50-95 |
-|---|---:|---:|
-| val | 0.845 | 0.520 |
-| test | 0.858 | 0.551 |
+Model ini mendeteksi objek dan postur pada gambar. Model belum mencakup identifikasi sapi individual, pelacakan antar-frame, atau pengukuran durasi berbaring yang tervalidasi. Data juga berasal dari satu lokasi dan satu jenis kamera, sehingga hasilnya belum dapat digeneralisasikan ke kandang dengan sudut kamera atau kondisi berbeda.
 
-P/R/F1 per kelas pada test, operating point `conf 0.25`, NMS IoU 0.5, match IoU 0.5:
+Hasil yang tersedia menjadi dasar untuk pengujian lapangan lebih lanjut, bukan pernyataan bahwa sistem sudah siap beroperasi tanpa pengawasan. Verifikasi label oleh manusia dan evaluasi pada kondisi pemasangan tetap diperlukan sebelum hasilnya digunakan sebagai data operasional.
 
-| Kelas | Precision | Recall | F1 | AP50 |
-|---|---:|---:|---:|---:|
-| cow_lying | 0.855 | 0.742 | 0.795 | 0.843 |
-| cow_standing | 0.936 | 0.889 | 0.912 | 0.952 |
-| person | 0.756 | 0.711 | 0.733 | 0.779 |
-| micro | 0.904 | 0.841 | 0.872 | 0.858 |
+## Lisensi
 
-mAP dihitung pada `conf 0.001`; micro adalah gabungan TP/FP/FN ketiga kelas, sedangkan AP50/AP50-95 micro sama dengan mAP split. Angka lengkap ada di `results/eval_metrics.json` dan `results/eval_metrics.csv`.
-
-Angka di atas mengukur kesesuaian model dengan label acuan otomatis Roboflow, bukan akurasi di lapangan.
-
-| Grafik training | Kurva F1 |
-|---|---|
-| ![](results/results.png) | ![](results/BoxF1_curve.png) |
-
-Matriks konfusi test pada `conf 0.25`: ![](results/confusion_matrix_test.png)
-
-## Contoh keluaran
-
-Dua frame test yang sama, label acuan otomatis di kiri dan prediksi model di kanan. Gambar berasal dari plot validasi Ultralytics; tiap panel berisi dua frame dan teks label dapat bertumpuk.
-
-| Label acuan otomatis | Prediksi model |
-|---|---|
-| ![](examples/test_batch0_labels.jpg) | ![](examples/test_batch0_pred.jpg) |
-
-Prediksi satu frame 1920x1080 dari sesi S6 (test), memakai bobot yang disertakan pada `conf 0.25`. Kotak dan skor ditampilkan apa adanya.
-
-![](examples/session_s6_frame_pred.jpg)
-
-Tidak ada wajah pekerja yang dapat dikenali pada contoh yang dipilih, dan kotak maupun skor tidak diubah. Video sumber tidak disertakan.
-
-## Batas
-
-- Tidak ada ground truth manusia; seluruh metrik adalah kesesuaian dengan pseudo-label Roboflow.
-- Tidak ada identitas sapi individual, pelacakan antar-frame, atau validasi durasi berbaring.
-- Satu lokasi dan satu jenis kamera; pergeseran domain belum diuji.
-- Kelas `person` ikut dilatih tetapi bukan fokus, dan performanya paling rendah.
-- Hasil ini bukan klaim kesiapan produksi.
-
-## Lisensi dan atribusi
-
-Kode dan bobot di repositori ini dilisensikan AGPL-3.0 (lihat `LICENSE`) karena diturunkan dari Ultralytics YOLO26 yang berlisensi AGPL-3.0. Pemakaian komersial tanpa kewajiban AGPL memerlukan lisensi dari Ultralytics. Label dibuat dengan Roboflow; tidak ada klaim lisensi atas dataset, dan dataset maupun video sumber tidak didistribusikan.
+Kode dan bobot menggunakan lisensi AGPL-3.0, mengikuti Ultralytics YOLO26 yang menjadi dasar model ini. Ketentuannya tersedia di [LICENSE](LICENSE). Untuk penggunaan komersial yang tidak mengikuti kewajiban AGPL, diperlukan lisensi dari Ultralytics. Pelabelan menggunakan Roboflow; repositori ini tidak memberikan lisensi atas dataset atau rekaman sumber.
 
 SHA256 bobot: `0147ac72a1732653133f2fc47fe901f8bea29a116334e0ecfc4514315454cde5`.
