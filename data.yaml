@@ -1,0 +1,9 @@
+train: data/images/train
+val: data/images/valid
+test: data/images/test
+
+nc: 3
+names:
+  0: cow_lying
+  1: cow_standing
+  2: person

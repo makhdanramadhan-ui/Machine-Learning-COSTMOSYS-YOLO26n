@@ -1,0 +1,171 @@
+{
+ "dataset": {
+  "images": 999,
+  "splits": {
+   "train": 599,
+   "val": 152,
+   "test": 248
+  },
+  "classes": {
+   "0": "cow_lying",
+   "1": "cow_standing",
+   "2": "person"
+  },
+  "label_source": "auto-label Roboflow (bukan ground truth manusia)"
+ },
+ "weights": "weights/yolo26n_640_s0_best.pt",
+ "weights_sha256": "0147ac72a1732653133f2fc47fe901f8bea29a116334e0ecfc4514315454cde5",
+ "device": "cpu",
+ "val_settings": {
+  "conf": 0.001,
+  "nms_iou": 0.7,
+  "nms_applied": true,
+  "ap_match_iou_grid": "0.50:0.05:0.95",
+  "curve_match_iou": 0.5,
+  "curve_conf": "argmax(mean smoothed F1 curve) over conf sweep",
+  "imgsz": 640
+ },
+ "operating_settings": {
+  "conf": 0.25,
+  "nms_iou": 0.5,
+  "nms_applied": true,
+  "match_iou": 0.5,
+  "imgsz": 640,
+  "match_rule": "greedy by confidence, one label per prediction"
+ },
+ "splits": {
+  "val": {
+   "images": 152,
+   "mAP50": 0.84548,
+   "mAP50_95": 0.51965,
+   "curve_precision_macro": 0.84926,
+   "curve_recall_macro": 0.74416,
+   "per_class": {
+    "cow_lying": {
+     "AP50": 0.8414,
+     "AP50_95": 0.48981,
+     "curve_precision": 0.79837,
+     "curve_recall": 0.77147,
+     "curve_f1": 0.78469
+    },
+    "cow_standing": {
+     "AP50": 0.91198,
+     "AP50_95": 0.62444,
+     "curve_precision": 0.89756,
+     "curve_recall": 0.79434,
+     "curve_f1": 0.8428
+    },
+    "person": {
+     "AP50": 0.78307,
+     "AP50_95": 0.4447,
+     "curve_precision": 0.85184,
+     "curve_recall": 0.66667,
+     "curve_f1": 0.74796
+    }
+   },
+   "operating_point": {
+    "cow_lying": {
+     "TP": 563,
+     "FP": 159,
+     "FN": 124,
+     "precision": 0.77978,
+     "recall": 0.81951,
+     "f1": 0.79915
+    },
+    "cow_standing": {
+     "TP": 910,
+     "FP": 111,
+     "FN": 182,
+     "precision": 0.89128,
+     "recall": 0.83333,
+     "f1": 0.86133
+    },
+    "person": {
+     "TP": 126,
+     "FP": 26,
+     "FN": 48,
+     "precision": 0.82895,
+     "recall": 0.72414,
+     "f1": 0.77301
+    },
+    "micro": {
+     "TP": 1599,
+     "FP": 296,
+     "FN": 354,
+     "precision": 0.8438,
+     "recall": 0.81874,
+     "f1": 0.83108
+    }
+   }
+  },
+  "test": {
+   "images": 248,
+   "mAP50": 0.85808,
+   "mAP50_95": 0.55102,
+   "curve_precision_macro": 0.86229,
+   "curve_recall_macro": 0.75727,
+   "per_class": {
+    "cow_lying": {
+     "AP50": 0.84312,
+     "AP50_95": 0.51717,
+     "curve_precision": 0.86785,
+     "curve_recall": 0.69242,
+     "curve_f1": 0.77027
+    },
+    "cow_standing": {
+     "AP50": 0.95182,
+     "AP50_95": 0.70169,
+     "curve_precision": 0.9186,
+     "curve_recall": 0.87638,
+     "curve_f1": 0.89699
+    },
+    "person": {
+     "AP50": 0.77931,
+     "AP50_95": 0.43419,
+     "curve_precision": 0.80044,
+     "curve_recall": 0.70301,
+     "curve_f1": 0.74856
+    }
+   },
+   "operating_point": {
+    "cow_lying": {
+     "TP": 509,
+     "FP": 86,
+     "FN": 177,
+     "precision": 0.85546,
+     "recall": 0.74198,
+     "f1": 0.79469
+    },
+    "cow_standing": {
+     "TP": 1934,
+     "FP": 133,
+     "FN": 242,
+     "precision": 0.93566,
+     "recall": 0.88879,
+     "f1": 0.91162
+    },
+    "person": {
+     "TP": 189,
+     "FP": 61,
+     "FN": 77,
+     "precision": 0.756,
+     "recall": 0.71053,
+     "f1": 0.73256
+    },
+    "micro": {
+     "TP": 2632,
+     "FP": 280,
+     "FN": 496,
+     "precision": 0.90385,
+     "recall": 0.84143,
+     "f1": 0.87152
+    }
+   }
+  }
+ },
+ "notes": [
+  "val dan test memakai pseudo-label otomatis Roboflow; angka mengukur kesesuaian dengan label acuan, bukan akurasi lapangan",
+  "mAP dihitung pada conf 0.001; P/R/F1 per kelas pada operating point conf 0.25, NMS IoU 0.5, match IoU 0.5",
+  "micro = gabungan TP/FP/FN ketiga kelas; AP50/AP50-95 micro = mAP split"
+ ]
+}
