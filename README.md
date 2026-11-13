@@ -44,6 +44,12 @@ python train.py
 
 Konfigurasi yang dipakai: CPU, 640 px, batch 2, 40 epoch, patience 10, seed 0, 6 thread, `workers 0`. Argumen lain tersedia lewat `python train.py --help`.
 
+Inferensi dengan bobot yang disertakan:
+
+```bash
+yolo predict model=weights/yolo26n_640_s0_best.pt source=data/images/test imgsz=640 conf=0.25 device=cpu
+```
+
 ## Hasil
 
 | Split | mAP50 | mAP50-95 |
