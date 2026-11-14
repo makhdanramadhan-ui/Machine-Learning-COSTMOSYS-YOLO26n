@@ -1,6 +1,6 @@
-# SmartCow: Deteksi Postur Sapi dengan YOLO26n
+# COSTMOSYS: Deteksi Postur Sapi dengan YOLO26n
 
-SmartCow menggunakan rekaman CCTV untuk mengenali sapi berdiri, sapi berbaring, dan orang di kandang. Model yang digunakan adalah YOLO26n, dilatih ulang dengan gambar dari kamera kandang agar sesuai dengan sudut pandang dan kondisi pencahayaan di lokasi.
+COSTMOSYS (Cow Stress Monitoring System) menggunakan rekaman CCTV untuk mengenali sapi berdiri, sapi berbaring, dan orang di kandang. Model yang digunakan adalah YOLO26n, dilatih ulang dengan gambar dari kamera kandang agar sesuai dengan sudut pandang dan kondisi pencahayaan di lokasi.
 
 Repositori ini memuat kode training, bobot model, hasil evaluasi, dan beberapa contoh prediksi. Pengembangannya mencakup pemilihan frame dari video, pelabelan objek, pembagian data berdasarkan sesi rekaman, hingga fine-tuning dan evaluasi model. Training dilakukan di CPU menggunakan Ultralytics dan PyTorch.
 
